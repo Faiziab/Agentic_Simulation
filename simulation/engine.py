@@ -16,6 +16,10 @@ from simulation.logger import SimulationLogger
 from simulation.chat_chains import ChatChainRunner
 from simulation.traits.voting import VotingBallot
 from simulation.dashboard import DashboardState, LiveDashboard, Status
+try:
+    from simulation.ui_dashboard import NiceGUIDashboard
+except ImportError:
+    NiceGUIDashboard = None  # NiceGUI not installed — fall back to old dashboard
 
 
 class SimulationEngine:
@@ -83,11 +87,16 @@ class SimulationEngine:
         self.quality_gate_iterations = 0
 
         # ── Dashboard (optional, --live mode) ────────
-        self.dashboard: LiveDashboard | None = None
+        self.dashboard = None
         self.dashboard_state: DashboardState | None = None
         if self.live:
             self.dashboard_state = DashboardState(self.agents)
-            self.dashboard = LiveDashboard(self.dashboard_state)
+            self.dashboard_state.set_agents_ref(self.agents)
+            # Prefer NiceGUI dashboard, fall back to old HTML dashboard
+            if NiceGUIDashboard is not None:
+                self.dashboard = NiceGUIDashboard(self.dashboard_state)
+            else:
+                self.dashboard = LiveDashboard(self.dashboard_state)
 
     def _setup_workspace(self):
         """Create the workspace directory structure — dynamic per department."""
@@ -391,10 +400,10 @@ Then briefly explain your reasoning (2-3 sentences)."""
         """Mark an agent as done on the dashboard and log the conversation."""
         if self.dashboard_state:
             self.dashboard_state.set_done(agent_id, output_preview)
-            # Also stream the full conversation to the dashboard
-            if task_text or output_preview:
-                agent = self.agents.get(agent_id)
-                if agent:
+            agent = self.agents.get(agent_id)
+            if agent:
+                # Stream the full conversation to the dashboard
+                if task_text or output_preview:
                     self.dashboard_state.add_conversation(
                         agent_id=agent_id,
                         agent_name=agent.name,
@@ -404,6 +413,26 @@ Then briefly explain your reasoning (2-3 sentences)."""
                         response=output_preview,
                         round_number=round_number,
                         tools_used=list(getattr(agent, 'last_tools_used', [])),
+                    )
+
+                # ── Track confidence for heatmap ──
+                confidence = getattr(agent, 'confidence', None)
+                if confidence is not None:
+                    self.dashboard_state.add_confidence_entry(
+                        agent_id=agent_id,
+                        agent_name=agent.name,
+                        score=confidence,
+                        round_number=round_number or self.current_round,
+                    )
+
+                # ── Track token usage ──
+                token_usage = getattr(agent, 'last_token_usage', None)
+                if token_usage:
+                    self.dashboard_state.update_token_stats(
+                        agent_id=agent_id,
+                        input_tokens=token_usage.get('input', 0),
+                        output_tokens=token_usage.get('output', 0),
+                        model=agent.model_name if hasattr(agent, 'model_name') else self.model_name,
                     )
 
     # ── Trait Integration Methods ───────────────────
@@ -653,6 +682,16 @@ Be strategic and ensure all departments' work will come together into a comprehe
             f"## Original Prompt\n{prompt}\n\n"
             f"## VP's Strategic Decomposition\n{result['response']}\n",
         )
+
+        # ── Dashboard: comm flow VP → all leads ──
+        if self.dashboard_state:
+            for lead_id in self.lead_ids:
+                lead = self.agents[lead_id]
+                self.dashboard_state.add_comm_flow(
+                    from_name=vp.name, to_name=lead.name,
+                    msg_type="delegation", preview="Strategic objectives",
+                    round_number=1,
+                )
 
         self.logger.log_round_end(1)
 
@@ -978,6 +1017,28 @@ If you need information from someone in another department, state it clearly in 
             chat_chain_summaries.append(
                 self.chat_chain_runner.get_chain_summary(chain)
             )
+
+            # ── Dashboard: comm flow + cross-dept tracking ──
+            if self.dashboard_state:
+                self.dashboard_state.add_comm_flow(
+                    from_name=initiating_agent.name,
+                    to_name=responding_agent.name,
+                    msg_type="collaboration",
+                    preview=question.content[:80],
+                    round_number=4,
+                )
+                self.dashboard_state.add_cross_dept_request(
+                    from_agent=initiating_agent.name,
+                    from_dept=initiating_agent.department or "executive",
+                    to_dept=responding_agent.department or "executive",
+                    request=question.content[:200],
+                    round_number=4,
+                )
+                self.dashboard_state.fulfill_cross_dept_request(
+                    from_dept=initiating_agent.department or "executive",
+                    to_dept=responding_agent.department or "executive",
+                    response=chain.conclusion[:200],
+                )
 
             self.logger.log_agent_action(
                 agent_id=target_agent_id,

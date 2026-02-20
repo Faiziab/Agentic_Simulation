@@ -232,6 +232,15 @@ Format: TARGET_AGENT: [agent_id] | REQUEST: [what you need and why]
             )
             result = response.text
 
+            # Track token usage for cost dashboard
+            self.last_token_usage = {}
+            if hasattr(response, 'usage_metadata') and response.usage_metadata:
+                um = response.usage_metadata
+                self.last_token_usage = {
+                    'input': getattr(um, 'prompt_token_count', 0) or 0,
+                    'output': getattr(um, 'candidates_token_count', 0) or 0,
+                }
+
             # Track tool usage if tools were called
             self.last_tools_used = []  # Reset for this call
             if self.has_tools and hasattr(response, 'candidates') and response.candidates:

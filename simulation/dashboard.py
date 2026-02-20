@@ -78,6 +78,30 @@ class DashboardState:
         # Kill switch — engine checks this to abort
         self.kill_requested = threading.Event()
 
+        # ── New Feature Data ──────────────────
+        # Communication flow log
+        self.comm_flow: list[dict] = []
+
+        # Cross-department request tracker
+        self.cross_dept_requests: list[dict] = []
+
+        # Confidence heatmap data (agents × rounds)
+        self.confidence_grid: list[dict] = []
+
+        # Token/cost tracking
+        self.token_stats: dict = {
+            "total_input": 0,
+            "total_output": 0,
+            "estimated_cost": 0.0,
+            "per_agent": {},
+        }
+
+        # Knowledge graph visualization data
+        self.knowledge_graph_data: dict | None = None
+
+        # Reference to agents dict for memory inspector
+        self.agents_ref: dict | None = None
+
     # ── State Mutation Methods (thread-safe) ──────
 
     def set_round(self, round_number: int, round_name: str):
@@ -157,6 +181,86 @@ class DashboardState:
         with self.lock:
             self.report_content = markdown_content
             self.simulation_complete = True
+
+    def set_agents_ref(self, agents: dict):
+        """Store reference to agents dict for memory inspector."""
+        self.agents_ref = agents
+
+    def add_comm_flow(self, from_name: str, to_name: str, msg_type: str,
+                      preview: str = "", round_number: int = 0):
+        """Record a communication flow entry."""
+        with self.lock:
+            self.comm_flow.append({
+                "from_name": from_name,
+                "to_name": to_name,
+                "msg_type": msg_type,
+                "preview": preview[:100],
+                "round": round_number,
+                "time": datetime.now().strftime("%H:%M:%S"),
+            })
+
+    def add_cross_dept_request(self, from_agent: str, from_dept: str,
+                               to_dept: str, request: str, round_number: int = 0):
+        """Record a cross-department request."""
+        with self.lock:
+            self.cross_dept_requests.append({
+                "from_agent": from_agent,
+                "from_dept": from_dept,
+                "to_dept": to_dept,
+                "request": request[:200],
+                "round": round_number,
+                "status": "pending",
+                "response": "",
+            })
+
+    def fulfill_cross_dept_request(self, from_dept: str, to_dept: str,
+                                    response: str = ""):
+        """Mark a cross-department request as fulfilled."""
+        with self.lock:
+            for req in reversed(self.cross_dept_requests):
+                if req["from_dept"] == from_dept and req["to_dept"] == to_dept and req["status"] == "pending":
+                    req["status"] = "fulfilled"
+                    req["response"] = response[:200]
+                    break
+
+    def add_confidence_entry(self, agent_id: str, agent_name: str,
+                             score: int | None, round_number: int = 0):
+        """Record a confidence score for the heatmap."""
+        if score is not None:
+            with self.lock:
+                self.confidence_grid.append({
+                    "agent_id": agent_id,
+                    "agent_name": agent_name,
+                    "round": round_number,
+                    "score": score,
+                })
+
+    def update_token_stats(self, agent_id: str, input_tokens: int,
+                           output_tokens: int, model: str = "gemini-2.5-flash"):
+        """Update cumulative token usage and cost."""
+        # Pricing per 1M tokens
+        pricing = {
+            "gemini-2.5-flash": (0.15, 0.60),
+            "gemini-3-flash-preview": (0.15, 0.60),
+            "gemini-3-pro-preview": (3.50, 10.50),
+        }
+        in_price, out_price = pricing.get(model, (0.15, 0.60))
+        cost = (input_tokens * in_price + output_tokens * out_price) / 1_000_000
+
+        with self.lock:
+            self.token_stats["total_input"] += input_tokens
+            self.token_stats["total_output"] += output_tokens
+            self.token_stats["estimated_cost"] += cost
+            if agent_id not in self.token_stats["per_agent"]:
+                self.token_stats["per_agent"][agent_id] = {"input": 0, "output": 0, "cost": 0.0}
+            self.token_stats["per_agent"][agent_id]["input"] += input_tokens
+            self.token_stats["per_agent"][agent_id]["output"] += output_tokens
+            self.token_stats["per_agent"][agent_id]["cost"] += cost
+
+    def set_knowledge_graph(self, nodes: list, edges: list):
+        """Set knowledge graph data for visualization."""
+        with self.lock:
+            self.knowledge_graph_data = {"nodes": nodes, "edges": edges}
 
     def get_elapsed(self) -> str:
         elapsed = (datetime.now() - self.start_time).total_seconds()

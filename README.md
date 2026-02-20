@@ -1,6 +1,6 @@
-# 🏢 R&D Department Multi-Agent Simulation
+# 🏢 Agentic Simulation — R&D Department Multi-Agent System
 
-A Python-based simulation engine that replicates how a real R&D department processes strategic initiatives through a hierarchy of AI agents with distinct personalities, memory, tool use, and higher-level thinking.
+A Python-based simulation engine that replicates how a real R&D department processes strategic initiatives through a hierarchy of AI agents with distinct personalities, memory, tool use, and higher-level thinking. Features a real-time NiceGUI dashboard with communication flow visualization, confidence heatmaps, token/cost tracking, and more.
 
 ## Architecture
 
@@ -39,14 +39,14 @@ Level 4    │Jr. Researcher│ │Jr. Engineer  │
 
 - **Python 3.10+**
 - **Google API Key** with Gemini access
-- **Dependencies**: `google-genai`, `rich`, `pyyaml`
+- **Dependencies**: `google-genai`, `rich`, `pyyaml`, `nicegui`, `plotly`
 
 ### Installation
 
 ```bash
 # 1. Clone the repository
 git clone <repo-url>
-cd Agentic_testing
+cd Agentic_Simulation
 
 # 2. Install dependencies
 pip install -r requirements.txt
@@ -68,7 +68,7 @@ python run_simulation.py --prompt "Investigate the feasibility of adding an AI-p
 # With verbose output (full agent responses in terminal)
 python run_simulation.py --prompt "..." --verbose
 
-# With live tmux-style dashboard (real-time agent activity)
+# With live NiceGUI dashboard (real-time agent activity in browser)
 python run_simulation.py --prompt "..." --live
 
 # With a custom model
@@ -86,11 +86,10 @@ python run_simulation.py --prompt "..." --model-map '{"1": "gemini-2.5-pro-previ
 |------|-------------|---------|
 | `--prompt` | The strategic initiative prompt (required) | — |
 | `--verbose` | Show full agent responses in terminal | `False` |
-| `--live` | Enable real-time tmux-style dashboard | `False` |
-| `--model` | Gemini model name for all agents | `gemini-2.0-flash` |
-| `--model-map` | JSON mapping agent levels to models | `None` |
-| `--config-dir` | Directory with YAML config files | `./config` |
-| `--workspace-dir` | Output workspace directory | `./workspace` |
+| `--live` | Enable real-time NiceGUI dashboard at `http://127.0.0.1:8420` | `False` |
+| `--model` | Gemini model name for all agents | `gemini-2.5-flash` |
+| `--tiered-models` | Use different models per hierarchy level (Pro for VP) | `False` |
+| `--list-runs` | List all previous simulation runs | `False` |
 
 ---
 
@@ -235,7 +234,7 @@ agent_id:
 ## Project Structure
 
 ```
-Agentic_testing/
+Agentic_Simulation/
 ├── run_simulation.py           # CLI entry point
 ├── config/
 │   ├── agent_profiles.yaml     # Agent personalities, traits, tools
@@ -250,7 +249,8 @@ Agentic_testing/
 │   ├── logger.py               # Structured logging
 │   ├── reporter.py             # Report generation
 │   ├── chat_chains.py          # Multi-turn chat chains
-│   ├── dashboard.py            # Live tmux-style terminal dashboard
+│   ├── dashboard.py            # Dashboard state + legacy HTML dashboard
+│   ├── ui_dashboard.py         # NiceGUI real-time dashboard (8 feature tabs)
 │   └── tools/                  # Agent tool system
 │       ├── __init__.py         # Tool registry and resolution
 │       ├── file_tools.py       # Workspace file read/write/list
@@ -262,9 +262,32 @@ Agentic_testing/
 │   ├── skill_growth.py         # Skill development
 │   ├── knowledge_graph.py      # Knowledge graph building
 │   └── fact_check.py           # Fact verification
-├── workspace/                  # Simulation output (created at runtime)
+├── runs/                       # Timestamped simulation outputs
 └── requirements.txt
 ```
+
+---
+
+## Live Dashboard
+
+Run with `--live` to open a real-time NiceGUI dashboard in your browser at `http://127.0.0.1:8420`.
+
+**Dashboard Tabs:**
+
+| Tab | Feature |
+|-----|---------|
+| 💬 Live Feed | Auto-scrolling message stream |
+| 🗣️ Conversations | Expandable agent outputs grouped by round |
+| 🔀 Comm Flow | Plotly Sankey diagram of agent communications |
+| 🌡️ Heatmap | Confidence scores heatmap (agents × rounds) |
+| 🧠 Knowledge | Knowledge graph network visualization |
+| 🔗 Cross-Dept | Request tracker with pending/fulfilled status |
+| 📊 Profiles | Agent performance stat bars |
+| 📄 Report | Markdown-rendered final report |
+
+**Additional features:** token/cost tracking in header, kill switch, hierarchical agent grid with live status indicators, remote access via `http://<your-ip>:8420`.
+
+> If NiceGUI is not installed, the engine automatically falls back to the legacy HTML dashboard.
 
 ---
 
