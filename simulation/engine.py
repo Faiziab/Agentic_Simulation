@@ -121,13 +121,7 @@ class SimulationEngine:
         if self.dashboard:
             self.dashboard.start()
 
-        try:
-            self._run_all_rounds(prompt)
-        finally:
-            # Always stop dashboard, even on error
-            if self.dashboard:
-                self.dashboard.stop()
-
+        self._run_all_rounds(prompt)
         self.logger.log_simulation_end()
 
     def _run_all_rounds(self, prompt: str):
@@ -1275,7 +1269,7 @@ Format your department's output as a clear, structured document that covers:
                     team_reflections=team_reflections,
                     own_reflection=own_reflection,
                 )
-                synthesis = lead.think(synthesis_prompt, round_number=6)
+                synthesis = lead.think(synthesis_prompt, round_number=6) or ""
 
                 self.reflection_engine.record_insight(
                     agent_id=lead_id,
