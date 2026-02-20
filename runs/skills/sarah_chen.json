@@ -1,0 +1,17 @@
+{
+  "agent_id": "sarah_chen",
+  "skills": {
+    "ai_ml": 18,
+    "architecture": 14,
+    "data_engineering": 0,
+    "ux_research": 6,
+    "product_strategy": 16,
+    "security": 12,
+    "performance": 8,
+    "nlp": 0,
+    "cloud_infrastructure": 0,
+    "testing_qa": 0,
+    "market_analysis": 18,
+    "user_research": 10
+  }
+}

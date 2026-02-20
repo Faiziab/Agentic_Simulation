@@ -1,0 +1,17 @@
+{
+  "agent_id": "maya_rodriguez",
+  "skills": {
+    "ai_ml": 10,
+    "architecture": 18,
+    "data_engineering": 0,
+    "ux_research": 0,
+    "product_strategy": 8,
+    "security": 12,
+    "performance": 4,
+    "nlp": 0,
+    "cloud_infrastructure": 0,
+    "testing_qa": 0,
+    "market_analysis": 8,
+    "user_research": 4
+  }
+}

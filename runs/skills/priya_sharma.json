@@ -1,0 +1,17 @@
+{
+  "agent_id": "priya_sharma",
+  "skills": {
+    "ai_ml": 10,
+    "architecture": 8,
+    "data_engineering": 4,
+    "ux_research": 0,
+    "product_strategy": 8,
+    "security": 6,
+    "performance": 6,
+    "nlp": 4,
+    "cloud_infrastructure": 0,
+    "testing_qa": 6,
+    "market_analysis": 10,
+    "user_research": 4
+  }
+}
