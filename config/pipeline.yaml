@@ -1,0 +1,85 @@
+# Simulation Pipeline Configuration
+# ===================================
+# Data-driven round sequence with auto-skip and quality gates.
+# The engine reads this file and executes steps in order.
+#
+# Step types:
+#   - round:         A standard simulation round, calls a method on the engine
+#   - quality_gate:  VP evaluates output quality and decides: proceed or iterate
+#   - hook:          Post-round hooks (fact-check, voting, trait reports)
+#
+# Flags:
+#   - pass_prompt:   Pass the original prompt as an argument to the method
+#   - auto_skip:     Skip this step if there's no applicable work
+#   - concurrent:    Whether agents run in parallel in --live mode
+
+pipeline:
+  # ── ROUND 1: VP STRATEGIC DECOMPOSITION ──────────
+  - name: "Strategic Decomposition"
+    type: round
+    round_number: 1
+    method: _round_1_strategic_decomposition
+    pass_prompt: true
+
+  # ── ROUND 2: DEPARTMENT PLANNING ─────────────────
+  - name: "Department Planning"
+    type: round
+    round_number: 2
+    method: _round_2_department_planning
+    concurrent: true
+
+  # ── ROUND 3: EXECUTION ──────────────────────────
+  - name: "Execution"
+    type: round
+    round_number: 3
+    method: _round_3_execution
+    concurrent: true
+
+  # ── ROUND 3.5: FACT-CHECK PASS ──────────────────
+  - name: "Fact-Check Pass"
+    type: hook
+    method: _run_fact_checks
+    pass_round: 3
+    auto_skip: true           # Skip if no fact_check trait enabled
+
+  # ── ROUND 4: COLLABORATION ─────────────────────
+  - name: "Cross-Department Collaboration"
+    type: round
+    round_number: 4
+    method: _round_4_collaboration
+    auto_skip: true           # Skip if no cross-dept requests pending
+
+  # ── ROUND 5: REFINEMENT ────────────────────────
+  - name: "Refinement"
+    type: round
+    round_number: 5
+    method: _round_5_refinement
+    concurrent: true
+
+  # ── QUALITY GATE: VP reviews quality ────────────
+  - name: "Quality Gate"
+    type: quality_gate
+    evaluator: vp             # Who evaluates
+    max_iterations: 2         # Max times to loop back
+    iterate_from: "Execution" # Step name to loop back to
+
+  # ── ROUND 5.5: VOTING SESSION ──────────────────
+  - name: "Voting Session"
+    type: hook
+    method: _run_voting_session
+    pass_prompt: true
+    auto_skip: true
+
+  # ── ROUND 6: REFLECTION ───────────────────────
+  - name: "Reflection & Synthesis"
+    type: round
+    round_number: 6
+    method: _round_6_reflection
+    concurrent: true
+
+  # ── ROUND 7: FINAL REPORT ─────────────────────
+  - name: "Final Report"
+    type: round
+    round_number: 7
+    method: _round_7_final_report
+    pass_prompt: true

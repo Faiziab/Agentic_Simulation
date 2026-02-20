@@ -1,0 +1,73 @@
+# R&D Department Organizational Structure
+# Defines hierarchy, departments, and reporting lines
+
+company:
+  name: "TechNova Inc."
+  division: "Research & Development"
+
+hierarchy_levels:
+  - level: 1
+    name: "Executive"
+    description: "Strategic direction, resource allocation, final synthesis"
+  - level: 2
+    name: "Department Lead"
+    description: "Translates strategy into team objectives, manages department"
+  - level: 3
+    name: "Senior Individual Contributor"
+    description: "Deep domain expert, autonomous execution, mentors juniors"
+  - level: 4
+    name: "Junior Individual Contributor"
+    description: "Supports seniors, handles specific sub-tasks, learning"
+
+departments:
+  research:
+    name: "Research Department"
+    mandate: "Explore state-of-the-art approaches, conduct literature reviews, analyze feasibility, provide evidence-based recommendations"
+    head: "james_okafor"
+    members:
+      - "priya_sharma"
+      - "tom_park"
+
+  engineering:
+    name: "Engineering Department"
+    mandate: "Design system architecture, assess technical feasibility, prototype solutions, define implementation roadmaps"
+    head: "maya_rodriguez"
+    members:
+      - "marcus_webb"
+      - "zara_ahmed"
+
+  product:
+    name: "Product Department"
+    mandate: "Understand user needs, define requirements, design user experience, align features with business goals"
+    head: "alex_kim"
+    members:
+      - "lena_voronova"
+
+reporting_lines:
+  sarah_chen:
+    reports_to: null
+    direct_reports: ["james_okafor", "maya_rodriguez", "alex_kim"]
+  james_okafor:
+    reports_to: "sarah_chen"
+    direct_reports: ["priya_sharma", "tom_park"]
+  maya_rodriguez:
+    reports_to: "sarah_chen"
+    direct_reports: ["marcus_webb", "zara_ahmed"]
+  alex_kim:
+    reports_to: "sarah_chen"
+    direct_reports: ["lena_voronova"]
+  priya_sharma:
+    reports_to: "james_okafor"
+    direct_reports: []
+  marcus_webb:
+    reports_to: "maya_rodriguez"
+    direct_reports: []
+  lena_voronova:
+    reports_to: "alex_kim"
+    direct_reports: []
+  tom_park:
+    reports_to: "james_okafor"
+    direct_reports: []
+  zara_ahmed:
+    reports_to: "maya_rodriguez"
+    direct_reports: []
