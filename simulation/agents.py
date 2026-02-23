@@ -231,6 +231,8 @@ Format: TARGET_AGENT: [agent_id] | REQUEST: [what you need and why]
                 config=config,
             )
             result = response.text
+            if result is None:
+                result = f"[Agent {self.name}: LLM returned empty response — possible safety filter or overloaded API]"
 
             # Track token usage for cost dashboard
             self.last_token_usage = {}
@@ -281,6 +283,8 @@ Format: TARGET_AGENT: [agent_id] | REQUEST: [what you need and why]
                         config=config,
                     )
                     result = response.text
+                    if result is None:
+                        result = f"[Agent {self.name}: LLM returned empty response on retry]"
                 except Exception as e2:
                     result = f"[Agent {self.name} encountered an error: {str(e2)}]"
             else:
@@ -308,6 +312,10 @@ Format: TARGET_AGENT: [agent_id] | REQUEST: [what you need and why]
         # Think (includes recall internally)
         self.working_memory.set_task(task, round_number=round_number)
         response = self.think(task, additional_context=context, round_number=round_number)
+
+        # Guard against None response (LLM safety filter, empty response, etc.)
+        if response is None:
+            response = f"[Agent {self.name} produced no output for this task]"
 
         # Learn — store the output
         self.memory_stream.add_memory(
