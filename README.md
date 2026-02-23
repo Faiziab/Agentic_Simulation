@@ -180,6 +180,10 @@ Traits are modular capabilities that plug into an agent's cognitive loop. Enable
 | `skill_growth` | Agents develop skills over time based on tasks completed |
 | `knowledge_graph` | Builds a per-agent knowledge graph of concepts and relationships |
 | `fact_check` | Cross-validates claims against other agents' outputs |
+| `devil_advocate` | Injects contrarian prompts to prevent groupthink (scaled by seniority) |
+| `emotional_state` | Tracks dynamic mood (0.0–1.0) affected by praise, criticism, and participation |
+| `decision_log` | Auto-extracts decisions from outputs, injects running summary for continuity |
+| `stakeholder_pressure` | Injects external events (CEO checkpoints, competitor launches, budget reviews) |
 
 ---
 
@@ -261,7 +265,11 @@ Agentic_Simulation/
 │   ├── voting.py               # Voting system
 │   ├── skill_growth.py         # Skill development
 │   ├── knowledge_graph.py      # Knowledge graph building
-│   └── fact_check.py           # Fact verification
+│   ├── fact_check.py           # Fact verification
+│   ├── devil_advocate.py       # Contrarian thinking / groupthink prevention
+│   ├── emotional_state.py      # Dynamic mood / morale tracking
+│   ├── decision_log.py         # Decision continuity tracking
+│   └── stakeholder_pressure.py # External pressure event injection
 ├── runs/                       # Timestamped simulation outputs
 └── requirements.txt
 ```
