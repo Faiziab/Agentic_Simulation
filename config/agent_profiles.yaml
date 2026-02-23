@@ -42,6 +42,10 @@ agents:
       - skill_growth
       - knowledge_graph
       - fact_check
+      - devil_advocate
+      - emotional_state
+      - decision_log
+      - stakeholder_pressure
     tools_enabled:
       - google_search
       - read_workspace_file
@@ -88,6 +92,10 @@ agents:
       - skill_growth
       - knowledge_graph
       - fact_check
+      - devil_advocate
+      - emotional_state
+      - decision_log
+      - stakeholder_pressure
     tools_enabled:
       - google_search
       - read_workspace_file
@@ -131,6 +139,10 @@ agents:
       - skill_growth
       - knowledge_graph
       - fact_check
+      - devil_advocate
+      - emotional_state
+      - decision_log
+      - stakeholder_pressure
     tools_enabled:
       - google_search
       - read_workspace_file
@@ -174,6 +186,10 @@ agents:
       - skill_growth
       - knowledge_graph
       - fact_check
+      - devil_advocate
+      - emotional_state
+      - decision_log
+      - stakeholder_pressure
     tools_enabled:
       - google_search
       - read_workspace_file
@@ -218,6 +234,9 @@ agents:
       - confidence
       - skill_growth
       - knowledge_graph
+      - devil_advocate
+      - emotional_state
+      - stakeholder_pressure
     tools_enabled:
       - google_search
       - calculator
@@ -257,6 +276,9 @@ agents:
       - confidence
       - skill_growth
       - knowledge_graph
+      - devil_advocate
+      - emotional_state
+      - stakeholder_pressure
     tools_enabled:
       - google_search
       - calculator
@@ -297,6 +319,9 @@ agents:
       - confidence
       - skill_growth
       - knowledge_graph
+      - devil_advocate
+      - emotional_state
+      - stakeholder_pressure
     tools_enabled:
       - google_search
 
@@ -338,6 +363,8 @@ agents:
     traits_enabled:
       - confidence
       - skill_growth
+      - emotional_state
+      - stakeholder_pressure
     tools_enabled:
       - google_search
       - calculator
@@ -375,6 +402,8 @@ agents:
     traits_enabled:
       - confidence
       - skill_growth
+      - emotional_state
+      - stakeholder_pressure
     tools_enabled:
       - google_search
       - calculator

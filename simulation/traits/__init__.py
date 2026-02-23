@@ -136,6 +136,10 @@ def create_default_registry() -> TraitRegistry:
     from simulation.traits.skill_growth import SkillGrowthTrait
     from simulation.traits.knowledge_graph import KnowledgeTrait
     from simulation.traits.fact_check import FactCheckTrait
+    from simulation.traits.devil_advocate import DevilAdvocateTrait
+    from simulation.traits.emotional_state import EmotionalStateTrait
+    from simulation.traits.decision_log import DecisionLogTrait
+    from simulation.traits.stakeholder_pressure import StakeholderPressureTrait
 
     registry = TraitRegistry()
     registry.register("confidence", ConfidenceTrait)
@@ -143,5 +147,9 @@ def create_default_registry() -> TraitRegistry:
     registry.register("skill_growth", SkillGrowthTrait)
     registry.register("knowledge_graph", KnowledgeTrait)
     registry.register("fact_check", FactCheckTrait)
+    registry.register("devil_advocate", DevilAdvocateTrait)
+    registry.register("emotional_state", EmotionalStateTrait)
+    registry.register("decision_log", DecisionLogTrait)
+    registry.register("stakeholder_pressure", StakeholderPressureTrait)
 
     return registry

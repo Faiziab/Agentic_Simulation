@@ -604,6 +604,34 @@ Then briefly explain your reasoning (2-3 sentences)."""
             if fc_md:
                 sections.append(fc_md)
 
+        # Devil's advocate report
+        da_trait = self.trait_registry.get_trait(self.vp_id, "devil_advocate")
+        if da_trait:
+            da_md = da_trait.format_report()
+            if da_md:
+                sections.append(da_md)
+
+        # Emotional state / morale report
+        es_trait = self.trait_registry.get_trait(self.vp_id, "emotional_state")
+        if es_trait:
+            es_md = es_trait.format_report()
+            if es_md:
+                sections.append(es_md)
+
+        # Decision log report
+        dl_trait = self.trait_registry.get_trait(self.vp_id, "decision_log")
+        if dl_trait:
+            dl_md = dl_trait.format_report()
+            if dl_md:
+                sections.append(dl_md)
+
+        # Stakeholder pressure report
+        sp_trait = self.trait_registry.get_trait(self.vp_id, "stakeholder_pressure")
+        if sp_trait:
+            sp_md = sp_trait.format_report()
+            if sp_md:
+                sections.append(sp_md)
+
         if sections:
             report_path = os.path.join(reports_dir, "trait_reports.md")
             with open(report_path, "w", encoding="utf-8") as f:
