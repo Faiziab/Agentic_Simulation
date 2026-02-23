@@ -107,7 +107,9 @@ class TraitRegistry:
     def call_on_act_postprocess(self, agent_id: str, agent, result: dict, round_number: int) -> dict:
         """Call on_act_postprocess on all enabled traits, chain result through each."""
         for trait in self.get_traits(agent_id):
-            result = trait.on_act_postprocess(agent, result, round_number)
+            returned = trait.on_act_postprocess(agent, result, round_number)
+            if returned is not None:
+                result = returned
         return result
 
     def call_on_round_end(self, agent_id: str, agent, round_number: int):

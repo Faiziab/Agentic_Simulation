@@ -13,6 +13,11 @@ Usage:
 """
 
 import argparse
+import warnings
+
+# Suppress SyntaxWarnings triggered by LLM-generated content containing
+# escape sequences (e.g. LaTeX \lambda) that Python's parser flags.
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 import json
 import os
 import re
@@ -301,6 +306,21 @@ Examples:
                 padding=(1, 2),
             )
         )
+
+        # Keep the process alive so the live dashboard stays accessible
+        if engine.dashboard_state and engine.dashboard:
+            console.print(
+                "\n  [bold cyan]📊 Dashboard still running at"
+                f" http://127.0.0.1:{engine.dashboard.port}[/bold cyan]"
+            )
+            console.print(
+                "  [dim]Press Ctrl+C to shut down the dashboard and exit.[/dim]\n"
+            )
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Dashboard stopped. Goodbye![/yellow]")
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Simulation interrupted by user.[/yellow]")

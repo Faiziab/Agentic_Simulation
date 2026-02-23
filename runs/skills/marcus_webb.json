@@ -1,17 +1,17 @@
 {
   "agent_id": "marcus_webb",
   "skills": {
-    "ai_ml": 10,
-    "architecture": 10,
-    "data_engineering": 0,
-    "ux_research": 0,
-    "product_strategy": 8,
-    "security": 8,
-    "performance": 4,
+    "ai_ml": 22,
+    "architecture": 28,
+    "data_engineering": 12,
+    "ux_research": 4,
+    "product_strategy": 26,
+    "security": 16,
+    "performance": 10,
     "nlp": 0,
-    "cloud_infrastructure": 0,
-    "testing_qa": 0,
-    "market_analysis": 8,
-    "user_research": 0
+    "cloud_infrastructure": 10,
+    "testing_qa": 14,
+    "market_analysis": 18,
+    "user_research": 12
   }
 }

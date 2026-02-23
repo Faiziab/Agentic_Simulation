@@ -1,17 +1,17 @@
 {
   "agent_id": "lena_voronova",
   "skills": {
-    "ai_ml": 8,
-    "architecture": 8,
+    "ai_ml": 16,
+    "architecture": 24,
     "data_engineering": 0,
-    "ux_research": 4,
-    "product_strategy": 8,
-    "security": 4,
+    "ux_research": 22,
+    "product_strategy": 24,
+    "security": 12,
     "performance": 0,
     "nlp": 0,
     "cloud_infrastructure": 0,
     "testing_qa": 0,
-    "market_analysis": 10,
-    "user_research": 10
+    "market_analysis": 20,
+    "user_research": 30
   }
 }

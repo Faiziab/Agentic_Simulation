@@ -1,17 +1,17 @@
 {
   "agent_id": "james_okafor",
   "skills": {
-    "ai_ml": 20,
-    "architecture": 14,
-    "data_engineering": 4,
-    "ux_research": 0,
-    "product_strategy": 14,
-    "security": 10,
-    "performance": 10,
-    "nlp": 4,
-    "cloud_infrastructure": 0,
-    "testing_qa": 12,
-    "market_analysis": 16,
-    "user_research": 4
+    "ai_ml": 34,
+    "architecture": 30,
+    "data_engineering": 0,
+    "ux_research": 8,
+    "product_strategy": 32,
+    "security": 32,
+    "performance": 24,
+    "nlp": 10,
+    "cloud_infrastructure": 14,
+    "testing_qa": 16,
+    "market_analysis": 38,
+    "user_research": 14
   }
 }
