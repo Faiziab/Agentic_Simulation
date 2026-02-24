@@ -50,6 +50,7 @@ class Agent:
         self.memory_stream = MemoryStream(agent_id, workspace_dir)
         self.last_reflection: Optional[str] = None
         self.deliverables: list[str] = []
+        self.shared_knowledge = None  # Set by engine for team knowledge pool
 
         # Build system instruction from personality
         self.system_instruction = self._build_system_instruction()
@@ -163,11 +164,12 @@ Format: TARGET_AGENT: [agent_id] | REQUEST: [what you need and why]
             round_number=round_number,
         )
 
-    def recall(self, n: int = 8) -> str:
+    def recall(self, query: str = "", n: int = 8) -> str:
         """
         Recall phase: retrieve relevant memories for the current context.
+        Uses semantic search when a query is provided.
         """
-        relevant_memories = self.memory_stream.retrieve(n=n)
+        relevant_memories = self.memory_stream.retrieve(query=query, n=n)
         reflections = self.memory_stream.get_reflections()[-3:]  # Last 3 reflections
 
         context_parts = [self.memory_stream.format_for_context(relevant_memories)]
@@ -176,6 +178,14 @@ Format: TARGET_AGENT: [agent_id] | REQUEST: [what you need and why]
             context_parts.append("\nPREVIOUS REFLECTIONS & INSIGHTS:")
             for ref in reflections:
                 context_parts.append(f"  💡 {ref.content[:300]}")
+
+        # Include shared team knowledge if available
+        if self.shared_knowledge:
+            team_knowledge = self.shared_knowledge.query(query or "recent findings", n=3)
+            if team_knowledge:
+                context_parts.append("\nTEAM KNOWLEDGE POOL:")
+                for entry in team_knowledge:
+                    context_parts.append(f"  🔗 [{entry.get('from_agent', '?')}] {entry.get('content', '')[:200]}")
 
         return "\n".join(context_parts)
 
@@ -186,7 +196,7 @@ Format: TARGET_AGENT: [agent_id] | REQUEST: [what you need and why]
         If the agent has tools enabled, passes them to Gemini for automatic function calling.
         """
         # Build the full context
-        recalled = self.recall()
+        recalled = self.recall(query=task)
         working = self.working_memory.get_context()
 
         prompt_parts = []

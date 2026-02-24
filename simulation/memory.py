@@ -2,13 +2,69 @@
 Memory System for R&D Simulation Agents.
 Implements Working Memory, Episodic Memory, and Semantic Memory
 inspired by Stanford's Generative Agents architecture.
+
+Upgraded with:
+  - Embedding-based semantic retrieval (Gemini text-embedding-004)
+  - Tri-factor scoring: relevance + recency + importance
+  - End-of-round memory consolidation
 """
 
 import json
+import math
 import os
+import threading
 from datetime import datetime
 from typing import Optional
 
+from google import genai
+
+# ── Embedding helpers ──────────────────────────────────────────
+
+_embed_client = None
+_embed_lock = threading.Lock()
+EMBEDDING_MODEL = "gemini-embedding-001"
+EMBEDDING_DIM = 768  # text-embedding-004 output size
+
+
+def _get_client():
+    """Lazy singleton for the Gemini client (thread-safe)."""
+    global _embed_client
+    if _embed_client is None:
+        with _embed_lock:
+            if _embed_client is None:
+                _embed_client = genai.Client()
+    return _embed_client
+
+
+def get_embedding(text: str) -> list[float]:
+    """Get embedding vector for a text string using Gemini's embedding model."""
+    try:
+        client = _get_client()
+        # Truncate very long text to avoid token limits
+        truncated = text[:2000] if len(text) > 2000 else text
+        result = client.models.embed_content(
+            model=EMBEDDING_MODEL,
+            contents=truncated,
+        )
+        return result.embeddings[0].values
+    except Exception:
+        # Fallback: return zero vector if embedding fails (API error, etc.)
+        return [0.0] * EMBEDDING_DIM
+
+
+def cosine_similarity(a: list[float], b: list[float]) -> float:
+    """Compute cosine similarity between two vectors."""
+    if not a or not b or len(a) != len(b):
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(x * x for x in b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+# ── Memory Entry ──────────────────────────────────────────────
 
 class MemoryEntry:
     """A single memory entry in an agent's memory stream."""
@@ -21,18 +77,20 @@ class MemoryEntry:
         source: str = "",
         related_agent: str = "",
         round_number: int = 0,
+        embedding: list[float] | None = None,
     ):
         self.id = f"mem_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
         self.timestamp = datetime.now().isoformat()
         self.content = content
-        self.memory_type = memory_type  # "observation", "action", "communication", "reflection", "insight"
+        self.memory_type = memory_type  # observation, action, communication, reflection, insight, consolidated
         self.importance = min(max(importance, 1), 10)  # 1-10 scale
         self.source = source  # who/what caused this memory
         self.related_agent = related_agent
         self.round_number = round_number
+        self.embedding = embedding  # Semantic embedding vector
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "id": self.id,
             "timestamp": self.timestamp,
             "content": self.content,
@@ -42,6 +100,10 @@ class MemoryEntry:
             "related_agent": self.related_agent,
             "round_number": self.round_number,
         }
+        # Store embedding only if it's non-zero (saves disk space)
+        if self.embedding and any(v != 0.0 for v in self.embedding):
+            d["embedding"] = self.embedding
+        return d
 
     @classmethod
     def from_dict(cls, data: dict) -> "MemoryEntry":
@@ -52,6 +114,7 @@ class MemoryEntry:
             source=data.get("source", ""),
             related_agent=data.get("related_agent", ""),
             round_number=data.get("round_number", 0),
+            embedding=data.get("embedding"),
         )
         entry.id = data["id"]
         entry.timestamp = data["timestamp"]
@@ -60,6 +123,8 @@ class MemoryEntry:
     def __repr__(self):
         return f"Memory({self.memory_type}, imp={self.importance}): {self.content[:60]}..."
 
+
+# ── Working Memory ────────────────────────────────────────────
 
 class WorkingMemory:
     """
@@ -104,10 +169,13 @@ class WorkingMemory:
         self.assigned_by = None
 
 
+# ── Memory Stream ─────────────────────────────────────────────
+
 class MemoryStream:
     """
     Long-term episodic + semantic memory for an agent.
-    Persists as JSONL file. Supports retrieval by recency, importance, and type.
+    Persists as JSONL file. Supports retrieval by recency, importance,
+    and semantic relevance (embedding-based).
     """
 
     def __init__(self, agent_id: str, workspace_dir: str):
@@ -132,7 +200,10 @@ class MemoryStream:
         related_agent: str = "",
         round_number: int = 0,
     ) -> MemoryEntry:
-        """Convenience method to create and add a memory."""
+        """Create, embed, and add a memory."""
+        # Generate semantic embedding for this memory
+        embedding = get_embedding(content)
+
         entry = MemoryEntry(
             content=content,
             memory_type=memory_type,
@@ -140,6 +211,7 @@ class MemoryStream:
             source=source,
             related_agent=related_agent,
             round_number=round_number,
+            embedding=embedding,
         )
         self.add(entry)
         return entry
@@ -162,25 +234,106 @@ class MemoryStream:
         """Get all memories from a specific round."""
         return [m for m in self.memories if m.round_number == round_number]
 
-    def retrieve(self, n: int = 10) -> list[MemoryEntry]:
+    def retrieve(self, query: str = "", n: int = 10) -> list[MemoryEntry]:
         """
-        Retrieve top-n memories weighted by recency + importance.
-        This is the primary retrieval method for building LLM context.
+        Retrieve top-n memories using tri-factor scoring:
+          - 35% semantic relevance (cosine similarity to query)
+          - 25% recency (more recent = higher)
+          - 40% importance (agent-assigned 1-10 scale)
+
+        Falls back to recency+importance if no query or no embeddings.
         """
         if not self.memories:
             return []
 
+        # Get query embedding if a query is provided
+        query_embedding = None
+        if query:
+            query_embedding = get_embedding(query)
+
         scored = []
         total = len(self.memories)
         for i, mem in enumerate(self.memories):
-            recency_score = (i + 1) / total  # 0 to 1, more recent = higher
-            importance_score = mem.importance / 10  # 0 to 1
-            # Weight: 40% recency, 60% importance
-            combined = 0.4 * recency_score + 0.6 * importance_score
+            recency_score = (i + 1) / total  # 0→1, more recent = higher
+            importance_score = mem.importance / 10  # 0→1
+
+            # Semantic relevance (0→1)
+            if query_embedding and mem.embedding:
+                relevance_score = max(0.0, cosine_similarity(query_embedding, mem.embedding))
+            else:
+                relevance_score = 0.5  # Neutral if no embeddings
+
+            # Tri-factor weighted score
+            if query_embedding:
+                combined = (
+                    0.35 * relevance_score
+                    + 0.25 * recency_score
+                    + 0.40 * importance_score
+                )
+            else:
+                # No query → fall back to original recency+importance
+                combined = 0.4 * recency_score + 0.6 * importance_score
+
             scored.append((combined, mem))
 
         scored.sort(key=lambda x: x[0], reverse=True)
         return [mem for _, mem in scored[:n]]
+
+    def consolidate(self, current_round: int, llm_client=None, model_name: str = "gemini-2.5-flash"):
+        """
+        End-of-round memory consolidation.
+        Summarizes older memories into 2-3 high-level insights,
+        reducing context bloat while preserving key knowledge.
+        """
+        # Only consolidate if we have enough memories
+        if len(self.memories) < 25:
+            return
+
+        # Identify old memories (more than 2 rounds old, not already consolidated)
+        old_memories = [
+            m for m in self.memories
+            if m.round_number < current_round - 1
+            and m.memory_type not in ("consolidated", "reflection", "insight")
+        ]
+
+        if len(old_memories) < 10:
+            return  # Not enough to justify consolidation
+
+        # Build summary prompt from old memories
+        mem_texts = [f"[R{m.round_number}] ({m.memory_type}) {m.content}" for m in old_memories[:30]]
+        summary_prompt = (
+            "You are consolidating an agent's memory. Summarize the following "
+            f"{len(mem_texts)} memories into exactly 3 concise key insights "
+            "(one line each). Preserve important facts, decisions, and relationships. "
+            "Format as a numbered list.\n\n"
+            + "\n".join(mem_texts)
+        )
+
+        try:
+            client = llm_client or _get_client()
+            response = client.models.generate_content(
+                model=model_name,
+                contents=summary_prompt,
+                config={"temperature": 0.3, "max_output_tokens": 512},
+            )
+            summary = response.text
+            if not summary:
+                return
+
+            # Remove old memories from active list (they're still in JSONL on disk)
+            old_ids = {m.id for m in old_memories}
+            self.memories = [m for m in self.memories if m.id not in old_ids]
+
+            # Add consolidated insight
+            self.add_memory(
+                content=f"CONSOLIDATED MEMORIES (rounds 1-{current_round - 2}):\n{summary}",
+                memory_type="consolidated",
+                importance=8,
+                source="memory_consolidation",
+                round_number=current_round,
+            )
+        except Exception:
+            pass  # Non-critical — keep original memories if consolidation fails
 
     def get_cumulative_importance(self, since_round: int = 0) -> int:
         """Get sum of importance scores since a given round."""
@@ -200,6 +353,7 @@ class MemoryStream:
                 "communication": "💬",
                 "reflection": "🔄",
                 "insight": "💡",
+                "consolidated": "📦",
             }.get(mem.memory_type, "•")
             lines.append(
                 f"  {prefix} [{mem.memory_type.upper()}] (importance: {mem.importance}/10) {mem.content}"

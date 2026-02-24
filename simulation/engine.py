@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from simulation.agents import Agent, load_agents
 from simulation.communication import MessageBoard
 from simulation.reflection import ReflectionEngine
+from simulation.shared_knowledge import KnowledgeManager
 from simulation.logger import SimulationLogger
 from simulation.chat_chains import ChatChainRunner
 from simulation.traits.voting import VotingBallot
@@ -64,6 +65,7 @@ class SimulationEngine:
         self.reflection_engine = ReflectionEngine()
         self.logger = SimulationLogger(workspace_dir, verbose=verbose)
         self.chat_chain_runner = ChatChainRunner(max_turns=4)
+        self.knowledge_manager = KnowledgeManager(workspace_dir)
 
         # ── Dynamic Agent Discovery ──────────────────
         self.vp_id = next(
@@ -80,6 +82,11 @@ class SimulationEngine:
 
         # Create workspace directories (dynamic per department)
         self._setup_workspace()
+
+        # Wire shared knowledge pools to agents
+        for agent in self.agents.values():
+            if agent.department:
+                agent.shared_knowledge = self.knowledge_manager.get_pool(agent.department)
 
         # State tracking
         self.current_round = 0
@@ -106,6 +113,7 @@ class SimulationEngine:
             os.path.join(self.workspace_dir, "reflections"),
             os.path.join(self.workspace_dir, "logs"),
             os.path.join(self.workspace_dir, "reports"),
+            os.path.join(self.workspace_dir, "knowledge"),
         ]
         # Create a directory for each discovered department
         for dept in self.departments:
@@ -1317,6 +1325,34 @@ Format your department's output as a clear, structured document that covers:
                     round_number=6,
                     department=lead.department,
                 )
+
+        # ── Memory Consolidation & Knowledge Publishing ──
+        self.logger.console.print("\n  📦 Consolidating agent memories...")
+        for agent_id, agent in self.agents.items():
+            try:
+                agent.memory_stream.consolidate(
+                    current_round=6,
+                    llm_client=agent.client,
+                    model_name=agent.model_name,
+                )
+            except Exception:
+                pass  # Non-critical
+
+            # Auto-publish high-importance reflections to team knowledge pool
+            if agent.department and agent.shared_knowledge:
+                reflections = agent.memory_stream.get_by_type("reflection", n=3)
+                for mem in reflections:
+                    if mem.importance >= 7:
+                        try:
+                            agent.shared_knowledge.publish(
+                                agent_id=agent_id,
+                                content=mem.content[:500],
+                                tags=[agent.department, agent.title.lower().replace(' ', '_')],
+                                importance=mem.importance,
+                                round_number=6,
+                            )
+                        except Exception:
+                            pass
 
         self.round_outputs[6] = round_outputs
         self.logger.log_round_end(6)
