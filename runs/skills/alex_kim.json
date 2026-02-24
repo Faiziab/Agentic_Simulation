@@ -1,17 +1,17 @@
 {
   "agent_id": "alex_kim",
   "skills": {
-    "ai_ml": 16,
-    "architecture": 8,
+    "ai_ml": 20,
+    "architecture": 20,
     "data_engineering": 0,
-    "ux_research": 20,
-    "product_strategy": 24,
-    "security": 8,
+    "ux_research": 26,
+    "product_strategy": 30,
+    "security": 20,
     "performance": 0,
-    "nlp": 0,
+    "nlp": 18,
     "cloud_infrastructure": 0,
-    "testing_qa": 4,
-    "market_analysis": 18,
-    "user_research": 28
+    "testing_qa": 8,
+    "market_analysis": 22,
+    "user_research": 40
   }
 }

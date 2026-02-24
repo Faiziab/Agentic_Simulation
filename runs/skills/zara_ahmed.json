@@ -1,17 +1,17 @@
 {
   "agent_id": "zara_ahmed",
   "skills": {
-    "ai_ml": 18,
-    "architecture": 24,
-    "data_engineering": 24,
+    "ai_ml": 30,
+    "architecture": 26,
+    "data_engineering": 10,
     "ux_research": 0,
     "product_strategy": 24,
-    "security": 12,
-    "performance": 0,
-    "nlp": 0,
-    "cloud_infrastructure": 0,
-    "testing_qa": 12,
-    "market_analysis": 18,
-    "user_research": 14
+    "security": 22,
+    "performance": 12,
+    "nlp": 18,
+    "cloud_infrastructure": 6,
+    "testing_qa": 6,
+    "market_analysis": 30,
+    "user_research": 12
   }
 }

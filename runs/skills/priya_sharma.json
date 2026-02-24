@@ -2,16 +2,16 @@
   "agent_id": "priya_sharma",
   "skills": {
     "ai_ml": 30,
-    "architecture": 24,
-    "data_engineering": 4,
+    "architecture": 18,
+    "data_engineering": 10,
     "ux_research": 0,
-    "product_strategy": 26,
-    "security": 22,
-    "performance": 12,
-    "nlp": 10,
-    "cloud_infrastructure": 4,
-    "testing_qa": 16,
-    "market_analysis": 28,
-    "user_research": 18
+    "product_strategy": 24,
+    "security": 16,
+    "performance": 8,
+    "nlp": 24,
+    "cloud_infrastructure": 0,
+    "testing_qa": 0,
+    "market_analysis": 30,
+    "user_research": 20
   }
 }
